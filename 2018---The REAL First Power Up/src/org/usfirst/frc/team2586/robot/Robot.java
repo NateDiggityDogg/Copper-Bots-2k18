@@ -26,6 +26,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends IterativeRobot {
 	
+	
+	
 	//VARIABLE DECLARATIONS
 	final String moveAuto = "line";
 	final String switchAuto = "switch";
@@ -67,16 +69,16 @@ public class Robot extends IterativeRobot {
 	
 	//Motor ports
 	//Drive Train
-	final int FL = 0;
-	final int RL = 0;
-	final int FR = 0;
-	final int RR = 0;
+	final int FL = 3;
+	final int RL = 4;
+	final int FR = 1;
+	final int RR = 2;
 	//Lift, Intake L&R, Shifters
-	final int L = 0;
+	/*final int L = 0;
 	final int IL = 0;
 	final int IR = 0;
 	final int S = 0;
-	
+	*/
 	//Joystick values
 	double lX;
 	double lY;
@@ -87,8 +89,8 @@ public class Robot extends IterativeRobot {
 	double XBOXlY;
 	double XBOXrY;
 	
-	Encoder leftDrive;
-	Encoder rightDrive;
+	//Encoder leftDrive;
+	//Encoder rightDrive;
 	
 	//Sendable chooser for autonomous
 	SendableChooser<String> autoChooser = new SendableChooser<>();
@@ -102,20 +104,21 @@ public class Robot extends IterativeRobot {
 		rightStick = new Joystick(1);
 		
 		//declaring encoder objects(used for tracking straight)
-		leftDrive = new Encoder(0,0);
-		rightDrive = new Encoder(0,0);
+		//leftDrive = new Encoder(0,0);
+		//rightDrive = new Encoder(0,0);
 		
 		//declaring talon and victor objects
 		frontRight = new WPI_TalonSRX(FR);
 		frontLeft = new WPI_TalonSRX(FL);
 		rearLeft = new WPI_TalonSRX(RL);
 		rearRight = new WPI_TalonSRX(RR);	
-		lift = new WPI_TalonSRX(L);
+
+		/*lift = new WPI_TalonSRX(L);
 		intakeLeft = new WPI_VictorSPX(IL);
-		intakeRight = new WPI_VictorSPX(IR);
+		intakeRight = new WPI_VictorSPX(IR);*/
 		
 		//Shifter
-		shift = new Solenoid(S);
+		//shift = new Solenoid(S);
 		
 		//declaring the drive system
 		mainDrive = new DifferentialDrive(frontLeft, frontRight);
@@ -150,7 +153,7 @@ public class Robot extends IterativeRobot {
 	//AUTONOMOUS PERIOD
 	public void autonomousPeriodic() {
 	//Switch case for AUTONOMOUS SWITCH
-	switch(autoSwitch) {
+	/*switch(autoSwitch) {
 	case forward:
 	frontLeft.set(0);
 	frontRight.set(0);
@@ -180,11 +183,20 @@ public class Robot extends IterativeRobot {
 	case dump:
 	break;
 	}
+	*/
 	//Switch case for AUTONOMOUS MOVE
 	switch(autoMove) {
 	case forward:
 	//once robot has crossed line
-	autoMove = moveFunc.stop;
+	frontRight.setInverted(true);
+	rearRight.setInverted(true);
+	frontLeft.set(0.2);
+	rearLeft.set(0.2);
+	frontRight.set(0.2);
+	rearRight.set(0.2);
+	frontRight.setInverted(true);
+	rearRight.setInverted(true);
+	//autoMove = moveFunc.stop;
 	break;
 	case stop:
 	break;
@@ -198,7 +210,9 @@ public class Robot extends IterativeRobot {
 		
 		//getting joystick variables and setting wheels to speed
 		lY = leftStick.getY();
-		rY = rightStick.getY();		
+		rY = rightStick.getY();	
+		lY = lY * -1;
+		rY = rY * -1;
 		mainDrive.tankDrive(lY, rY);
 		
 		//buttons for main driver
@@ -216,15 +230,15 @@ public class Robot extends IterativeRobot {
 		XBOXrY = XBox.getRawAxis(5);
 		
 		//setting lift and intake to XBox values
-		lift.set(XBOXlY);
+		//lift.set(XBOXlY);
 		
-		intakeLeft.set(XBOXrY);
-		intakeRight.set(XBOXrY);
+		//intakeLeft.set(XBOXrY);
+		//intakeRight.set(XBOXrY);
 		
 		//if statements for buttons on operators controller
-		if(XBox.getRawButton(1)) {
+		//if(XBox.getRawButton(1)) {
 		
-		}
+		//}
 	}
 	//TESTING PERIOD
 	public void testPeriodic() {
