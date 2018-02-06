@@ -1,13 +1,8 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
 
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
-
-//Version 1.0 ~Last edited: 1/29/2018
-
+/*Version 1.1 ~Last edited: 2/5/2018
+ * 1.0 - First Working Build
+ * 1.1 - Working Auto Code for Cross the Line and basic driving for switch control auto
+*/
 package org.usfirst.frc.team2586.robot;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -19,6 +14,7 @@ import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -40,12 +36,14 @@ public class Robot extends IterativeRobot {
 		forward2,
 		turn2,
 		forward3,
-		dump
+		dump,
+		unused
 	}
 	
 	enum moveFunc{
 		forward,
-		stop
+		stop,
+		unused
 	}
 	//Naming Talons
 	WPI_TalonSRX frontLeft, frontRight, rearLeft, rearRight, lift;
@@ -89,8 +87,10 @@ public class Robot extends IterativeRobot {
 	double XBOXlY;
 	double XBOXrY;
 	
-	//Encoder leftDrive;
-	//Encoder rightDrive;
+	double f1, t1, f2, t2, f3;
+	
+	Encoder leftEnc;
+	Encoder rightEnc;
 	
 	//Sendable chooser for autonomous
 	SendableChooser<String> autoChooser = new SendableChooser<>();
@@ -104,8 +104,16 @@ public class Robot extends IterativeRobot {
 		rightStick = new Joystick(1);
 		
 		//declaring encoder objects(used for tracking straight)
-		//leftDrive = new Encoder(0,0);
-		//rightDrive = new Encoder(0,0);
+		leftEnc = new Encoder(1,0);
+		rightEnc = new Encoder(2,3);
+		
+		int kDistancePerRevolution = 19;
+		int kPulsesPerRevolution = 1;
+		double kDistancePerPulse = kDistancePerRevolution/kPulsesPerRevolution;
+		
+		leftEnc.setDistancePerPulse(kDistancePerPulse);
+		rightEnc.setDistancePerPulse(kDistancePerPulse);
+		
 		
 		//declaring talon and victor objects
 		frontRight = new WPI_TalonSRX(FR);
@@ -135,16 +143,24 @@ public class Robot extends IterativeRobot {
 	}
 	//BEGINNING OF AUTONOMOUS
 	public void autonomousInit() {
+		autoConstantSet();
+		frontRight.setInverted(true);
+		rearRight.setInverted(true);
+		leftEnc.reset();
+		rightEnc.reset();
 		//get the setup of the gameboard and decide on selected auto program
-		gameData = DriverStation.getInstance().getGameSpecificMessage();
+		//gameData = DriverStation.getInstance().getGameSpecificMessage();
+		gameData = "LRL";
 		autoSelected = (String) autoChooser.getSelected();
 		//Setting switch variable to first movement
 		switch(autoSelected) {
 		case moveAuto:
-		autoMove = moveFunc.forward;	
+		autoMove = moveFunc.forward;
+		autoSwitch = switchFunc.unused;
 		break;
 		case switchAuto:
-		autoConstantSet();
+		autoSwitch = switchFunc.forward;
+		autoMove = moveFunc.unused;
 		break;
 		
 		
@@ -152,57 +168,113 @@ public class Robot extends IterativeRobot {
 	}
 	//AUTONOMOUS PERIOD
 	public void autonomousPeriodic() {
+		SmartDashboard.putNumber("Left Encoder Distance", leftEnc.getDistance());
+		SmartDashboard.putNumber("Right Encoder Distance", rightEnc.getDistance());
 	//Switch case for AUTONOMOUS SWITCH
-	/*switch(autoSwitch) {
+	switch(autoSwitch) {
 	case forward:
-	frontLeft.set(0);
-	frontRight.set(0);
-	if((leftDrive.getDistance() + rightDrive.getDistance())/2 >= 1000) {
-		frontLeft.set(0);
-		frontRight.set(0);
+		frontLeft.set(0.2);
+		frontRight.set(0.2);
+		rearLeft.set(0.2);
+		rearRight.set(0.2);
+	if((Math.abs(leftEnc.getDistance()) + Math.abs(rightEnc.getDistance()))/2 >= f1) {
 		autoSwitch = switchFunc.turn1;
+		leftEnc.reset();
+		rightEnc.reset();
+		
 	}
 	//once the robot has moved forwards enough
 	break;
 	case turn1:
+		frontLeft.set(0.2);
+		rearLeft.set(0.2);
+		frontRight.set(-0.2);
+		rearRight.set(-0.2);
 	//once the robot has turned enough
-	autoSwitch = switchFunc.forward2;
+	if((Math.abs(leftEnc.getDistance()) + Math.abs(rightEnc.getDistance()))/2 >= t1) {
+		autoSwitch = switchFunc.forward2;
+		leftEnc.reset();
+		rightEnc.reset();
+	}
 	break;
 	case forward2:
+		frontLeft.set(0.2);
+		rearLeft.set(0.2);
+		frontRight.set(0.2);
+		rearRight.set(0.2);
 	//once the robot has moved forwards enough
-	autoSwitch = switchFunc.turn2;
+		if((Math.abs(leftEnc.getDistance()) + Math.abs(rightEnc.getDistance()))/2 >= f2) {
+			autoSwitch = switchFunc.turn2;
+			leftEnc.reset();
+			rightEnc.reset();
+		}
+	
 	break;
 	case turn2:
+		frontLeft.set(0.2);
+		rearLeft.set(0.2);
+		frontRight.set(-0.2);
+		rearRight.set(-0.2);
 	//once the robot has turned right enough
-	autoSwitch = switchFunc.forward3;
+		if((Math.abs(leftEnc.getDistance()) + Math.abs(rightEnc.getDistance()))/2 >= t2) {
+			autoSwitch = switchFunc.forward3;
+			leftEnc.reset();
+			rightEnc.reset();
+		}
 	break;
 	case forward3:
+		frontLeft.set(0.2);
+		rearLeft.set(0.2);
+		frontRight.set(0.2);
+		rearRight.set(0.2);
 	//once robot has moved forwards enough
-	autoSwitch = switchFunc.dump;
+		if((Math.abs(leftEnc.getDistance()) + Math.abs(rightEnc.getDistance()))/2 >= f3) {
+			autoSwitch = switchFunc.dump;
+			leftEnc.reset();
+			rightEnc.reset();
+		}
+	
 	break;
 	case dump:
+		frontLeft.set(0);
+		rearLeft.set(0);
+		frontRight.set(0);
+		rearRight.set(0);
+	break;
+	case unused:
 	break;
 	}
-	*/
+	
 	//Switch case for AUTONOMOUS MOVE
 	switch(autoMove) {
 	case forward:
 	//once robot has crossed line
-	frontRight.setInverted(true);
-	rearRight.setInverted(true);
+	frontRight.set(0.2);
 	frontLeft.set(0.2);
 	rearLeft.set(0.2);
-	frontRight.set(0.2);
 	rearRight.set(0.2);
-	frontRight.setInverted(true);
-	rearRight.setInverted(true);
-	//autoMove = moveFunc.stop;
+	
+	if((leftEnc.getDistance() + rightEnc.getDistance())/2 >= 10000) {
+		autoMove = moveFunc.stop;
+	}
 	break;
+	
 	case stop:
+	frontLeft.set(0);
+	frontRight.set(0);
+	rearLeft.set(0);
+	rearRight.set(0);
+	leftEnc.reset();
+	rightEnc.reset();
+	frontRight.setInverted(false);
+	rearRight.setInverted(false);
+	break;
+	
+	case unused:
 	break;
 	}
 		
-		
+	
 	}
 	//TELEOPERATED PERIOD
 	public void teleopPeriodic() {
@@ -214,14 +286,16 @@ public class Robot extends IterativeRobot {
 		lY = lY * -1;
 		rY = rY * -1;
 		mainDrive.tankDrive(lY, rY);
+		SmartDashboard.putNumber("Left Encoder Distance", leftEnc.getDistance());
+		SmartDashboard.putNumber("Right Encoder Distance", rightEnc.getDistance());
 		
 		//buttons for main driver
-		if(rightStick.getRawButton(1)) {
+		/*if(rightStick.getRawButton(1)) {
 			shift.set(true);
 		}
 		if(leftStick.getRawButton(1)) {
 			shift.set(false);
-		}
+		}*/
 		
 		//SECONDARY DRIVERS CODE
 		
@@ -244,16 +318,25 @@ public class Robot extends IterativeRobot {
 	public void testPeriodic() {
 	}
 	public void autoConstantSet(){
-		if(gameData.charAt(0) == 'L')
+	//	if(gameData.charAt(0) == 'L')
+		if(true)
 		{
 			//Put left auto code here
 			//set auto variables <--
-			autoSwitch = switchFunc.forward;
+			f1 = 10000;
+			t1 = 10000;
+			f2 = 10000;
+			t2 = 10000;
+			f3 = 10000;
 			
 		} else {
 			//Put right auto code here
 			//set auto variables <--
-			autoSwitch = switchFunc.forward;
+			f1 = 10000;
+			t1 = 2000;
+			f2 = 10000;
+			t2 = 2000;
+			f3 = 10000;
 		}
 	}
 	
